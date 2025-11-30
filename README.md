@@ -21,7 +21,6 @@ projeto-progmat/
 │           ├── __init__.py
 │           └── output.py            # Visualização de resultados
 ├── cflp_cantinas.py                  # Ponto de entrada principal
-├── calculate_total_demand.py         # Script auxiliar para calcular demanda
 ├── map_point_marker.py               # Interface gráfica para marcar pontos
 ├── map_points.json                   # Dados dos pontos (demanda e instalação)
 ├── requirements.txt                  # Dependências do projeto
@@ -66,12 +65,6 @@ Utilitários para visualização:
 
 ```bash
 python cflp_cantinas.py
-```
-
-### Calcular demanda total
-
-```bash
-python calculate_total_demand.py
 ```
 
 ### Marcar pontos no mapa

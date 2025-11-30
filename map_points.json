@@ -497,6 +497,42 @@
       "type": "alphanumeric",
       "x": 501,
       "y": 1029
+    },
+    {
+      "id": "C16",
+      "type": "alphanumeric",
+      "x": 747,
+      "y": 661
+    },
+    {
+      "id": "C17",
+      "type": "alphanumeric",
+      "x": 985,
+      "y": 580
+    },
+    {
+      "id": "C18",
+      "type": "alphanumeric",
+      "x": 1108,
+      "y": 1070
+    },
+    {
+      "id": "C19",
+      "type": "alphanumeric",
+      "x": 1412,
+      "y": 1992
+    },
+    {
+      "id": "C20",
+      "type": "alphanumeric",
+      "x": 1561,
+      "y": 1702
+    },
+    {
+      "id": "C21",
+      "type": "alphanumeric",
+      "x": 1371,
+      "y": 1561
     }
   ]
 }

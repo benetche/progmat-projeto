@@ -8,6 +8,7 @@ import json
 import logging
 import sys
 from pathlib import Path
+from typing import Any, Dict
 
 # Ensure UTF-8 encoding for output
 if sys.stdout.encoding != "utf-8":
@@ -21,8 +22,14 @@ if sys.stdout.encoding != "utf-8":
 from src.cflp.config import JSON_PATH
 from src.cflp.data_loader import load_points
 from src.cflp.distance import calculate_distance_matrix
-from src.cflp.solvers import GurobiSolver, SCIPSolver, is_gurobi_available, is_scip_available
-from src.cflp.utils.output import print_solution
+from src.cflp.solvers import (
+    GurobiSolver,
+    HeuristicSolver,
+    SCIPSolver,
+    is_gurobi_available,
+    is_scip_available,
+)
+from src.cflp.utils.output import print_comparison, print_solution
 
 # Configure logging
 logging.basicConfig(
@@ -49,6 +56,9 @@ def main() -> None:
         # Calculate distance matrix
         distance_matrix = calculate_distance_matrix(demand_points, facility_points)
 
+        # Store all solutions for comparison
+        all_solutions: Dict[str, Any] = {}
+
         # Solve with Gurobi
         if is_gurobi_available():
             print("\n" + "=" * 80)
@@ -58,6 +68,7 @@ def main() -> None:
             gurobi_solution = gurobi_solver.solve()
             if gurobi_solution:
                 print_solution(gurobi_solution, "Gurobi")
+                all_solutions["Gurobi"] = gurobi_solution
         else:
             print("\nGurobi nao esta disponivel. Instale com: pip install gurobipy")
 
@@ -70,8 +81,23 @@ def main() -> None:
             scip_solution = scip_solver.solve()
             if scip_solution:
                 print_solution(scip_solution, "SCIP")
+                all_solutions["SCIP"] = scip_solution
         else:
             print("\nSCIP nao esta disponivel. Instale com: pip install pyscipopt")
+
+        # Solve with Heuristic
+        print("\n" + "=" * 80)
+        print("RESOLVENDO COM HEURISTICA...")
+        print("=" * 80)
+        heuristic_solver = HeuristicSolver(demand_points, facility_points, distance_matrix)
+        heuristic_solution = heuristic_solver.solve()
+        if heuristic_solution:
+            print_solution(heuristic_solution, "Heuristica")
+            all_solutions["Heuristica"] = heuristic_solution
+
+        # Print comparison
+        if len(all_solutions) > 1:
+            print_comparison(all_solutions)
 
     except FileNotFoundError as e:
         logger.error(f"Error: {e}")

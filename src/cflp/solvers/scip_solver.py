@@ -5,6 +5,7 @@ Location Problem.
 """
 
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 try:
@@ -146,20 +147,58 @@ class SCIPSolver:
                         name=f"assignment_{i}_{j}",
                     )
 
-            # Optimize
+            # Optimize with timing
+            start_time = time.time()
             model.optimize()
+            elapsed_time = time.time() - start_time
 
-            # Extract solution
-            if model.getStatus() == "optimal":
+            # Get status
+            scip_status = model.getStatus()
+            status_map = {
+                "optimal": "otima",
+                "timelimit": "factivel (limite de tempo)",
+                "infeasible": "infactivel",
+                "unbounded": "ilimitada",
+                "inforunbd": "infactivel ou ilimitada",
+            }
+            status_str = status_map.get(scip_status, f"desconhecido ({scip_status})")
+
+            # Calculate gap
+            gap = None
+            if scip_status == "optimal":
+                gap = 0.0
+            elif scip_status == "timelimit":
+                try:
+                    obj_val = model.getObjVal()
+                    dual_bound = model.getDualbound()
+                    if dual_bound != float("inf") and dual_bound != 0:
+                        gap = abs(obj_val - dual_bound) / abs(dual_bound) * 100
+                    elif dual_bound == 0 and obj_val > 0:
+                        gap = float("inf")
+                except Exception:
+                    gap = None
+
+            if scip_status in ["optimal", "timelimit"]:
                 solution = self._extract_solution(model, y, x, d, f, c)
+                solution["status"] = status_str
+                solution["processing_time"] = elapsed_time
+                solution["gap"] = gap
+                solution["solver_name"] = "SCIP"
+                
                 logger.info(
                     f"SCIP solution found: {len(solution['facilities_opened'])} "
-                    f"facilities, objective = {solution['objective_value']:.2f}",
+                    f"facilities, objective = {solution['objective_value']:.2f}, "
+                    f"time = {elapsed_time:.2f}s",
                 )
                 return solution
             else:
-                logger.error(f"SCIP optimization failed with status: {model.getStatus()}")
-                return None
+                logger.error(f"SCIP optimization failed with status: {scip_status}")
+                return {
+                    "status": status_str,
+                    "processing_time": elapsed_time,
+                    "gap": gap,
+                    "solver_name": "SCIP",
+                }
 
         except Exception as e:
             logger.error(f"Error solving with SCIP: {e}")

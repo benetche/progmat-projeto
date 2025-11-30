@@ -5,6 +5,7 @@ Location Problem.
 """
 
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 try:
@@ -145,20 +146,58 @@ class GurobiSolver:
                         name=f"assignment_{i}_{j}",
                     )
 
-            # Optimize
+            # Optimize with timing
+            start_time = time.time()
             model.optimize()
+            elapsed_time = time.time() - start_time
 
             # Extract solution
+            status_map = {
+                GRB.OPTIMAL: "otima",
+                GRB.TIME_LIMIT: "factivel (limite de tempo)",
+                GRB.SUBOPTIMAL: "factivel (subotima)",
+                GRB.INFEASIBLE: "infactivel",
+                GRB.UNBOUNDED: "ilimitada",
+                GRB.INF_OR_UNBD: "infactivel ou ilimitada",
+            }
+            status_str = status_map.get(model.status, f"desconhecido ({model.status})")
+
+            # Calculate gap
+            gap = None
             if model.status == GRB.OPTIMAL:
+                gap = 0.0
+            elif model.status in [GRB.TIME_LIMIT, GRB.SUBOPTIMAL]:
+                try:
+                    obj_val = model.ObjVal
+                    obj_bound = model.ObjBound
+                    if obj_bound != float("inf") and obj_bound != 0:
+                        gap = abs(obj_val - obj_bound) / abs(obj_bound) * 100
+                    elif obj_bound == 0 and obj_val > 0:
+                        gap = float("inf")
+                except Exception:
+                    gap = None
+
+            if model.status in [GRB.OPTIMAL, GRB.TIME_LIMIT, GRB.SUBOPTIMAL]:
                 solution = self._extract_solution(model, y, x, d, f, c)
+                solution["status"] = status_str
+                solution["processing_time"] = elapsed_time
+                solution["gap"] = gap
+                solution["solver_name"] = "Gurobi"
+                
                 logger.info(
                     f"Gurobi solution found: {len(solution['facilities_opened'])} "
-                    f"facilities, objective = {solution['objective_value']:.2f}",
+                    f"facilities, objective = {solution['objective_value']:.2f}, "
+                    f"time = {elapsed_time:.2f}s",
                 )
                 return solution
             else:
                 logger.error(f"Gurobi optimization failed with status: {model.status}")
-                return None
+                return {
+                    "status": status_str,
+                    "processing_time": elapsed_time,
+                    "gap": gap,
+                    "solver_name": "Gurobi",
+                }
 
         except Exception as e:
             logger.error(f"Error solving with Gurobi: {e}")

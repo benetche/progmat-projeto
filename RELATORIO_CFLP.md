@@ -451,16 +451,14 @@ Cantinas abertas: X
 
 1. **`cflp_cantinas.py`**: Implementação principal do modelo CFLP
 2. **`map_points.json`**: Dados dos pontos de demanda e instalação
-3. **`calculate_total_demand.py`**: Script auxiliar para calcular demanda total
-4. **`map_point_marker.py`**: Aplicação GUI para marcar pontos no mapa
-5. **`requirements.txt`**: Dependências do projeto
+3. **`map_point_marker.py`**: Aplicação GUI para marcar pontos no mapa
+4. **`requirements.txt`**: Dependências do projeto
 
 ### 11.2 Estrutura de Código
 
 ```
 projeto-progmat/
 ├── cflp_cantinas.py          # Modelo CFLP principal
-├── calculate_total_demand.py  # Cálculo de demanda total
 ├── map_point_marker.py       # Interface gráfica
 ├── map_points.json           # Dados dos pontos
 ├── requirements.txt          # Dependências
