@@ -1,20 +1,19 @@
-"""Configuration module for CFLP problem.
-
-This module contains all configuration constants and parameters for the
-Capacitated Facility Location Problem.
+"""
+Configurações do problema CFLP.
 """
 
 from pathlib import Path
 from typing import Dict
 
-# Path to JSON file containing map points
+# Arquivo JSON com os pontos do mapa
 JSON_PATH = Path("map_points.json")
 
-# Cafeteria types configuration
+# Tipos de cantinas disponíveis com suas características
+# Valores atualizados conforme especificação do problema
 CAFETERIA_TYPES: Dict[str, Dict[str, float]] = {
     "pequena": {
-        "capacity": 370.0,  # Capacidade máxima de demanda atendida
-        "fixed_cost": 90000.0,  # Custo fixo de construção
+        "capacity": 370.0,  # unidades de demanda
+        "fixed_cost": 90000.0,  # R$
     },
     "media": {
         "capacity": 550.0,
@@ -26,6 +25,7 @@ CAFETERIA_TYPES: Dict[str, Dict[str, float]] = {
     },
 }
 
-# Cost per unit distance (custo variável por unidade de distância)
+# Fator de custo por distância - multiplica a distância pela demanda
+# para calcular o custo variável de transporte
 DISTANCE_COST_FACTOR = 1.0
 

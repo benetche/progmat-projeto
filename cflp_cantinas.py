@@ -1,7 +1,6 @@
-"""Main entry point for CFLP problem solving.
+"""
+Script principal para resolver o problema CFLP de otimização de cantinas.
 
-This module provides the main entry point for solving the Capacitated Facility
-Location Problem (CFLP) for optimizing cafeteria construction in a university campus.
 """
 
 import json
@@ -10,12 +9,13 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-# Ensure UTF-8 encoding for output
+# Ajuste de encoding para evitar problemas com caracteres especiais no Windows
+# Tentei usar reconfigure primeiro, mas em versões antigas do Python precisa do fallback
 if sys.stdout.encoding != "utf-8":
     try:
         sys.stdout.reconfigure(encoding="utf-8")
     except AttributeError:
-        # Python < 3.7 compatibility
+        # Fallback para Python < 3.7
         import codecs
         sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer, "strict")
 
@@ -40,11 +40,12 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> None:
-    """Main entry point for CFLP problem solving."""
+
     try:
-        # Load data
+        # Carrega os dados do JSON - pontos de demanda e locais possíveis
         demand_points, facility_points = load_points(JSON_PATH)
 
+        # Validações básicas antes de continuar
         if not demand_points:
             print("Erro: Nenhum ponto de demanda encontrado.")
             return
@@ -53,13 +54,14 @@ def main() -> None:
             print("Erro: Nenhum ponto de instalacao encontrado.")
             return
 
-        # Calculate distance matrix
+        # Pre-calcula a matriz de distâncias uma vez só (evita recalcular várias vezes)
         distance_matrix = calculate_distance_matrix(demand_points, facility_points)
 
-        # Store all solutions for comparison
+        # Guarda todas as soluções para comparar no final
         all_solutions: Dict[str, Any] = {}
 
-        # Solve with Gurobi
+        # Tenta resolver com Gurobi (se disponível)
+        # Gurobi geralmente é mais rápido, então tento primeiro
         if is_gurobi_available():
             print("\n" + "=" * 80)
             print("RESOLVENDO COM GUROBI...")
@@ -72,7 +74,7 @@ def main() -> None:
         else:
             print("\nGurobi nao esta disponivel. Instale com: pip install gurobipy")
 
-        # Solve with SCIP
+        # SCIP como alternativa open-source
         if is_scip_available():
             print("\n" + "=" * 80)
             print("RESOLVENDO COM SCIP...")
@@ -85,7 +87,8 @@ def main() -> None:
         else:
             print("\nSCIP nao esta disponivel. Instale com: pip install pyscipopt")
 
-        # Solve with Heuristic
+        # Heurística sempre roda (não precisa de biblioteca externa)
+        # Útil para ter uma solução rápida mesmo sem os solvers exatos
         print("\n" + "=" * 80)
         print("RESOLVENDO COM HEURISTICA...")
         print("=" * 80)
@@ -95,7 +98,7 @@ def main() -> None:
             print_solution(heuristic_solution, "Heuristica")
             all_solutions["Heuristica"] = heuristic_solution
 
-        # Print comparison
+        # Só mostra comparação se tiver pelo menos 2 soluções
         if len(all_solutions) > 1:
             print_comparison(all_solutions)
 

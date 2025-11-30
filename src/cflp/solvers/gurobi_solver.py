@@ -1,13 +1,12 @@
-"""Gurobi solver implementation for CFLP problem.
-
-This module provides the Gurobi-based solver for the Capacitated Facility
-Location Problem.
+"""
+Solver usando Gurobi para o problema CFLP.
 """
 
 import logging
 import time
 from typing import Any, Dict, List, Optional
 
+# Tenta importar Gurobi - se não estiver instalado, o solver não funciona
 try:
     import gurobipy as gp
     from gurobipy import GRB
@@ -51,45 +50,45 @@ class GurobiSolver:
         self.distance_matrix = distance_matrix
 
     def solve(self) -> Optional[Dict[str, Any]]:
-        """Solve the CFLP problem using Gurobi.
 
-        Returns:
-            Dictionary containing solution information, or None if solver
-            is not available or optimization fails.
-        """
         if not GUROBI_AVAILABLE:
             logger.error("Gurobi is not available")
             return None
 
         try:
-            # Create model
+            # Cria o modelo no Gurobi
             model = gp.Model("CFLP_Cantinas")
-            model.setParam("OutputFlag", 0)  # Suppress Gurobi output
+            # Desliga output do Gurobi para não poluir o console
+            model.setParam("OutputFlag", 0)
 
-            # Sets
-            I = range(len(self.demand_points))  # Demand points
-            J = range(len(self.facility_points))  # Facility locations
-            K = list(CAFETERIA_TYPES.keys())  # Cafeteria types
+            # Conjuntos do problema (seguindo notação matemática)
+            I = range(len(self.demand_points))  # pontos de demanda
+            J = range(len(self.facility_points))  # locais de instalação
+            K = list(CAFETERIA_TYPES.keys())  # tipos de cantina
 
-            # Parameters
-            d = {i: self.demand_points[i]["demand"] for i in I}  # Demand at point i
+            # Parâmetros do modelo
+            # d[i] = demanda no ponto i
+            d = {i: self.demand_points[i]["demand"] for i in I}
+            # f[j,k] = custo fixo de abrir cantina tipo k no local j
             f = {
                 (j, k): CAFETERIA_TYPES[k]["fixed_cost"]
                 for j in J
                 for k in K
-            }  # Fixed cost
+            }
+            # Q[k] = capacidade da cantina tipo k
             Q = {
                 k: CAFETERIA_TYPES[k]["capacity"]
                 for k in K
-            }  # Capacity of cafeteria type k
+            }
+            # c[i,j] = custo variável por unidade de demanda do ponto i ao local j
             c = {
                 (i, j): self.distance_matrix[i][j] * DISTANCE_COST_FACTOR
                 for i in I
                 for j in J
-            }  # Variable cost (distance * factor)
+            }
 
-            # Decision variables
-            # y[j][k] = 1 if facility of type k is opened at location j
+            # Variáveis de decisão
+            # y[j,k] = 1 se abrir cantina tipo k no local j, 0 caso contrário
             y = model.addVars(
                 J,
                 K,
@@ -97,7 +96,8 @@ class GurobiSolver:
                 name="y",
             )
 
-            # x[i][j] = fraction of demand at i served by facility at j
+            # x[i,j] = fração da demanda do ponto i atendida pela cantina no local j
+            # Permite divisão de demanda entre múltiplas cantinas (relaxação)
             x = model.addVars(
                 I,
                 J,
@@ -107,23 +107,24 @@ class GurobiSolver:
                 name="x",
             )
 
-            # Objective: minimize total cost (fixed + variable)
+            # Função objetivo: minimizar custo total
+            # Primeiro termo = custos fixos, segundo termo = custos variáveis
             model.setObjective(
                 gp.quicksum(f[j, k] * y[j, k] for j in J for k in K)
                 + gp.quicksum(c[i, j] * d[i] * x[i, j] for i in I for j in J),
                 GRB.MINIMIZE,
             )
 
-            # Constraints
-            # 1. All demand must be satisfied
+            # Restrições do modelo
+            # 1. Toda demanda deve ser atendida (soma das frações = 1)
             for i in I:
                 model.addConstr(
                     gp.quicksum(x[i, j] for j in J) == 1.0,
                     name=f"demand_satisfaction_{i}",
                 )
 
-            # 2. Capacity constraints: total demand served by a facility
-            #    cannot exceed its capacity
+            # 2. Restrição de capacidade: demanda total atendida por uma cantina
+            #    não pode exceder sua capacidade
             for j in J:
                 model.addConstr(
                     gp.quicksum(d[i] * x[i, j] for i in I)
@@ -131,14 +132,15 @@ class GurobiSolver:
                     name=f"capacity_{j}",
                 )
 
-            # 3. At most one cafeteria type per location
+            # 3. No máximo um tipo de cantina por local
             for j in J:
                 model.addConstr(
                     gp.quicksum(y[j, k] for k in K) <= 1,
                     name=f"one_type_{j}",
                 )
 
-            # 4. Can only assign demand to open facilities
+            # 4. Só pode atribuir demanda a cantinas abertas
+            # Se nenhuma cantina estiver aberta em j, x[i,j] deve ser 0
             for i in I:
                 for j in J:
                     model.addConstr(
@@ -146,12 +148,12 @@ class GurobiSolver:
                         name=f"assignment_{i}_{j}",
                     )
 
-            # Optimize with timing
+            # Resolve o modelo e mede o tempo
             start_time = time.time()
             model.optimize()
             elapsed_time = time.time() - start_time
 
-            # Extract solution
+            # Mapeia status do Gurobi para texto legível
             status_map = {
                 GRB.OPTIMAL: "otima",
                 GRB.TIME_LIMIT: "factivel (limite de tempo)",
@@ -162,10 +164,11 @@ class GurobiSolver:
             }
             status_str = status_map.get(model.status, f"desconhecido ({model.status})")
 
-            # Calculate gap
+            # Calcula gap de optimalidade (diferença entre solução e bound)
+            # Gap = 0% significa solução ótima garantida
             gap = None
             if model.status == GRB.OPTIMAL:
-                gap = 0.0
+                gap = 0.0  # Solução ótima
             elif model.status in [GRB.TIME_LIMIT, GRB.SUBOPTIMAL]:
                 try:
                     obj_val = model.ObjVal
@@ -212,19 +215,7 @@ class GurobiSolver:
         f: Dict[tuple, float],
         c: Dict[tuple, float],
     ) -> Dict[str, Any]:
-        """Extract solution from Gurobi model.
 
-        Args:
-            model: Gurobi model instance.
-            y: Binary decision variables for facility opening.
-            x: Continuous decision variables for demand assignment.
-            d: Demand dictionary.
-            f: Fixed cost dictionary.
-            c: Variable cost dictionary.
-
-        Returns:
-            Dictionary containing solution information.
-        """
         I = range(len(self.demand_points))
         J = range(len(self.facility_points))
         K = list(CAFETERIA_TYPES.keys())

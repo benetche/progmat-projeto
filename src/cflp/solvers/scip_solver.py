@@ -1,13 +1,12 @@
-"""SCIP solver implementation for CFLP problem.
-
-This module provides the SCIP-based solver for the Capacitated Facility
-Location Problem.
+"""
+Solver usando SCIP para o problema CFLP.
 """
 
 import logging
 import time
 from typing import Any, Dict, List, Optional
 
+# Tenta importar SCIP - se não estiver instalado, o solver não funciona
 try:
     from pyscipopt import Model, quicksum
     SCIP_AVAILABLE = True
@@ -21,16 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 def is_scip_available() -> bool:
-    """Check if SCIP is available.
-
-    Returns:
-        True if SCIP is available, False otherwise.
-    """
     return SCIP_AVAILABLE
 
 
 class SCIPSolver:
-    """SCIP-based solver for CFLP problem."""
 
     def __init__(
         self,
@@ -38,93 +31,82 @@ class SCIPSolver:
         facility_points: List[Dict[str, Any]],
         distance_matrix: List[List[float]],
     ) -> None:
-        """Initialize the SCIP solver.
-
-        Args:
-            demand_points: List of demand point dictionaries.
-            facility_points: List of facility location dictionaries.
-            distance_matrix: Distance matrix between demand and facility points.
-        """
         self.demand_points = demand_points
         self.facility_points = facility_points
         self.distance_matrix = distance_matrix
 
     def solve(self) -> Optional[Dict[str, Any]]:
-        """Solve the CFLP problem using SCIP.
 
-        Returns:
-            Dictionary containing solution information, or None if solver
-            is not available or optimization fails.
-        """
         if not SCIP_AVAILABLE:
             logger.error("SCIP is not available")
             return None
 
         try:
-            # Create model
+            # Cria o modelo no SCIP
             model = Model("CFLP_Cantinas")
-            model.hideOutput()  # Suppress SCIP output
+            # Desliga output do SCIP
+            model.hideOutput()
 
-            # Sets
-            I = range(len(self.demand_points))  # Demand points
-            J = range(len(self.facility_points))  # Facility locations
-            K = list(CAFETERIA_TYPES.keys())  # Cafeteria types
+            # Conjuntos (mesma notação do Gurobi)
+            I = range(len(self.demand_points))  # pontos de demanda
+            J = range(len(self.facility_points))  # locais de instalação
+            K = list(CAFETERIA_TYPES.keys())  # tipos de cantina
 
-            # Parameters
-            d = {i: self.demand_points[i]["demand"] for i in I}  # Demand at point i
+            # Parâmetros
+            d = {i: self.demand_points[i]["demand"] for i in I}
             f = {
                 (j, k): CAFETERIA_TYPES[k]["fixed_cost"]
                 for j in J
                 for k in K
-            }  # Fixed cost
+            }
             Q = {
                 k: CAFETERIA_TYPES[k]["capacity"]
                 for k in K
-            }  # Capacity of cafeteria type k
+            }
             c = {
                 (i, j): self.distance_matrix[i][j] * DISTANCE_COST_FACTOR
                 for i in I
                 for j in J
-            }  # Variable cost (distance * factor)
+            }
 
-            # Decision variables
-            # y[j][k] = 1 if facility of type k is opened at location j
+            # Variáveis de decisão
+            # SCIP precisa criar variáveis uma a uma (diferente do Gurobi)
+            # y[j,k] = 1 se abrir cantina tipo k no local j
             y = {}
             for j in J:
                 for k in K:
                     y[j, k] = model.addVar(
-                        vtype="B",
+                        vtype="B",  # Binary
                         name=f"y_{j}_{k}",
                     )
 
-            # x[i][j] = fraction of demand at i served by facility at j
+            # x[i,j] = fração da demanda do ponto i atendida pela cantina no local j
             x = {}
             for i in I:
                 for j in J:
                     x[i, j] = model.addVar(
-                        vtype="C",
+                        vtype="C",  # Continuous
                         lb=0.0,
                         ub=1.0,
                         name=f"x_{i}_{j}",
                     )
 
-            # Objective: minimize total cost (fixed + variable)
+            # Função objetivo: minimizar custo total
             model.setObjective(
                 quicksum(f[j, k] * y[j, k] for j in J for k in K)
                 + quicksum(c[i, j] * d[i] * x[i, j] for i in I for j in J),
                 "minimize",
             )
 
-            # Constraints
-            # 1. All demand must be satisfied
+            # Restrições (mesmas do Gurobi)
+            # 1. Toda demanda deve ser atendida
             for i in I:
                 model.addCons(
                     quicksum(x[i, j] for j in J) == 1.0,
                     name=f"demand_satisfaction_{i}",
                 )
 
-            # 2. Capacity constraints: total demand served by a facility
-            #    cannot exceed its capacity
+            # 2. Restrição de capacidade
             for j in J:
                 model.addCons(
                     quicksum(d[i] * x[i, j] for i in I)
@@ -132,14 +114,14 @@ class SCIPSolver:
                     name=f"capacity_{j}",
                 )
 
-            # 3. At most one cafeteria type per location
+            # 3. No máximo um tipo de cantina por local
             for j in J:
                 model.addCons(
                     quicksum(y[j, k] for k in K) <= 1,
                     name=f"one_type_{j}",
                 )
 
-            # 4. Can only assign demand to open facilities
+            # 4. Só pode atribuir demanda a cantinas abertas
             for i in I:
                 for j in J:
                     model.addCons(
@@ -147,12 +129,12 @@ class SCIPSolver:
                         name=f"assignment_{i}_{j}",
                     )
 
-            # Optimize with timing
+            # Resolve o modelo e mede o tempo
             start_time = time.time()
             model.optimize()
             elapsed_time = time.time() - start_time
 
-            # Get status
+            # Mapeia status do SCIP para texto legível
             scip_status = model.getStatus()
             status_map = {
                 "optimal": "otima",
@@ -163,10 +145,11 @@ class SCIPSolver:
             }
             status_str = status_map.get(scip_status, f"desconhecido ({scip_status})")
 
-            # Calculate gap
+            # Calcula gap de optimalidade
+            # SCIP usa getDualbound() ao invés de ObjBound do Gurobi
             gap = None
             if scip_status == "optimal":
-                gap = 0.0
+                gap = 0.0  # Solução ótima
             elif scip_status == "timelimit":
                 try:
                     obj_val = model.getObjVal()
@@ -213,19 +196,7 @@ class SCIPSolver:
         f: Dict[tuple, float],
         c: Dict[tuple, float],
     ) -> Dict[str, Any]:
-        """Extract solution from SCIP model.
 
-        Args:
-            model: SCIP model instance.
-            y: Binary decision variables for facility opening.
-            x: Continuous decision variables for demand assignment.
-            d: Demand dictionary.
-            f: Fixed cost dictionary.
-            c: Variable cost dictionary.
-
-        Returns:
-            Dictionary containing solution information.
-        """
         I = range(len(self.demand_points))
         J = range(len(self.facility_points))
         K = list(CAFETERIA_TYPES.keys())
@@ -239,10 +210,10 @@ class SCIPSolver:
             "total_variable_cost": 0.0,
         }
 
-        # Get opened facilities
+        # Identifica cantinas abertas (y[j,k] = 1)
         for j in J:
             for k in K:
-                if model.getVal(y[j, k]) > 0.5:  # Binary variable is 1
+                if model.getVal(y[j, k]) > 0.5:  # Variável binária = 1
                     facility_id = self.facility_points[j]["id"]
                     solution["facilities_opened"].append({
                         "location": facility_id,
@@ -255,13 +226,13 @@ class SCIPSolver:
                     })
                     solution["total_fixed_cost"] += f[j, k]
 
-        # Get assignments
+        # Extrai atribuições de demanda (x[i,j] > 0)
         for i in I:
             demand_id = self.demand_points[i]["id"]
             solution["assignments"][demand_id] = []
             for j in J:
                 x_val = model.getVal(x[i, j])
-                if x_val > 1e-6:  # Non-zero assignment
+                if x_val > 1e-6:  # Atribuição não-zero
                     facility_id = self.facility_points[j]["id"]
                     assigned_demand = d[i] * x_val
                     variable_cost = c[i, j] * assigned_demand

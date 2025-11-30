@@ -1,8 +1,5 @@
-"""Heuristic solver implementation for CFLP problem.
-
-This module provides a greedy heuristic solver for the Capacitated Facility
-Location Problem. The heuristic uses a cost-benefit approach to construct
-a feasible solution.
+"""
+Heurística gulosa para resolver o problema CFLP.
 """
 
 import logging
@@ -15,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class HeuristicSolver:
-    """Greedy heuristic solver for CFLP problem."""
 
     def __init__(
         self,
@@ -23,27 +19,16 @@ class HeuristicSolver:
         facility_points: List[Dict[str, Any]],
         distance_matrix: List[List[float]],
     ) -> None:
-        """Initialize the heuristic solver.
-
-        Args:
-            demand_points: List of demand point dictionaries.
-            facility_points: List of facility location dictionaries.
-            distance_matrix: Distance matrix between demand and facility points.
-        """
         self.demand_points = demand_points
         self.facility_points = facility_points
         self.distance_matrix = distance_matrix
 
     def solve(self) -> Dict[str, Any]:
-        """Solve the CFLP problem using a greedy heuristic.
 
-        Returns:
-            Dictionary containing solution information.
-        """
         logger.info("Starting heuristic solution construction")
         start_time = time.time()
 
-        # Initialize solution
+        # Estrutura inicial da solução
         solution = {
             "status": "heuristic",
             "objective_value": 0.0,
@@ -53,35 +38,38 @@ class HeuristicSolver:
             "total_variable_cost": 0.0,
         }
 
-        # Calculate total demand
+        # Calcula demanda total (útil para debug, mas não usado diretamente)
         total_demand = sum(point["demand"] for point in self.demand_points)
 
-        # Step 1: Calculate cost-benefit for each (facility, type) combination
+        # Etapa 1: Calcula score de custo-benefício para cada opção
         facility_options = self._calculate_facility_options()
 
-        # Step 2: Sort options by cost-benefit (lower is better)
+        # Etapa 2: Ordena por score (menor = melhor)
         facility_options.sort(key=lambda x: x["cost_benefit"])
 
-        # Step 3: Greedy construction
-        opened_facilities: Dict[int, Dict[str, Any]] = {}  # j -> {type, capacity, used_capacity}
+        # Etapa 3: Construção gulosa
+        # Guarda quais cantinas foram abertas: índice -> {tipo, capacidade, capacidade_usada}
+        opened_facilities: Dict[int, Dict[str, Any]] = {}
+        # Demanda que ainda precisa ser atendida
         remaining_demand = {i: self.demand_points[i]["demand"] for i in range(len(self.demand_points))}
-        # Track assignments: facility_idx -> list of (demand_idx, assigned_amount)
+        # Rastreia atribuições: índice_cantina -> lista de (índice_demanda, quantidade_atribuída)
         facility_assignments: Dict[int, List[Tuple[int, float]]] = {}
 
+        # Percorre as opções ordenadas por score
         for option in facility_options:
             facility_idx = option["facility_idx"]
             facility_type = option["type"]
             capacity = option["capacity"]
             fixed_cost = option["fixed_cost"]
 
-            # Skip if facility already opened
+            # Pula se já abriu uma cantina neste local
             if facility_idx in opened_facilities:
                 continue
 
-            # Calculate how much demand this facility can serve
+            # Tenta atribuir demanda a esta cantina
+            # Começa com toda a capacidade disponível
             available_capacity = capacity
 
-            # Try to assign demand to this facility
             assignments = self._assign_demand_to_facility_with_tracking(
                 facility_idx,
                 facility_type,
@@ -89,8 +77,8 @@ class HeuristicSolver:
                 remaining_demand,
             )
 
-            if assignments:  # If any demand was assigned
-                # Open facility
+            # Se conseguiu atribuir alguma demanda, abre a cantina
+            if assignments:
                 opened_facilities[facility_idx] = {
                     "type": facility_type,
                     "capacity": capacity,
@@ -100,12 +88,13 @@ class HeuristicSolver:
                 solution["total_fixed_cost"] += fixed_cost
                 facility_assignments[facility_idx] = []
 
-                # Track assignments
+                # Registra as atribuições
                 for demand_idx, assigned_amount in assignments:
                     opened_facilities[facility_idx]["used_capacity"] += assigned_amount
                     facility_assignments[facility_idx].append((demand_idx, assigned_amount))
 
-        # Step 4: Ensure all demand is satisfied (if not, open additional facilities)
+        # Etapa 4: Garante que toda demanda seja atendida
+        # Se sobrou demanda, abre cantinas adicionais se necessário
         self._ensure_all_demand_satisfied(
             opened_facilities,
             remaining_demand,
@@ -114,13 +103,13 @@ class HeuristicSolver:
             facility_assignments,
         )
 
-        # Step 5: Build final solution structure
+        # Etapa 5: Constrói estrutura final da solução
         self._build_solution_structure(opened_facilities, facility_assignments, solution)
 
-        # Step 6: Local improvement (try to reduce costs)
+        # Etapa 6: Melhoria local - tenta remover cantinas pouco utilizadas
         self._local_improvement(opened_facilities, remaining_demand, solution)
 
-        # Rebuild solution after improvement
+        # Reconstrói solução após melhorias (pode ter removido cantinas)
         self._build_solution_structure(opened_facilities, facility_assignments, solution)
 
         # Calculate final objective value
@@ -143,11 +132,7 @@ class HeuristicSolver:
         return solution
 
     def _calculate_facility_options(self) -> List[Dict[str, Any]]:
-        """Calculate cost-benefit for each facility-type combination.
 
-        Returns:
-            List of facility options with cost-benefit scores.
-        """
         options = []
 
         for j, facility in enumerate(self.facility_points):
@@ -155,15 +140,18 @@ class HeuristicSolver:
                 capacity = config["capacity"]
                 fixed_cost = config["fixed_cost"]
 
-                # Calculate average distance to demand points
+                # Calcula distância média até os pontos de demanda
+                # Isso dá uma ideia de quão "central" é o local
                 avg_distance = sum(self.distance_matrix[i][j] for i in range(len(self.demand_points)))
                 avg_distance /= len(self.demand_points) if self.demand_points else 1
 
-                # Cost-benefit: fixed cost per unit capacity + estimated variable cost
-                # Lower is better
+                # Score de custo-benefício
+                # Primeiro termo: custo fixo por unidade de capacidade
+                # Segundo termo: estimativa de custo variável (peso menor)
                 cost_per_capacity = fixed_cost / capacity
                 estimated_var_cost = avg_distance * DISTANCE_COST_FACTOR
-                cost_benefit = cost_per_capacity + estimated_var_cost * 0.1  # Weight variable cost
+                # Peso 0.1 no custo variável porque é só uma estimativa
+                cost_benefit = cost_per_capacity + estimated_var_cost * 0.1
 
                 options.append({
                     "facility_idx": j,
@@ -183,32 +171,24 @@ class HeuristicSolver:
         available_capacity: float,
         remaining_demand: Dict[int, float],
     ) -> List[Tuple[int, float]]:
-        """Assign demand to a facility using greedy approach.
 
-        Args:
-            facility_idx: Index of the facility.
-            facility_type: Type of the facility.
-            available_capacity: Available capacity at the facility.
-            remaining_demand: Dictionary of remaining demand per point.
-
-        Returns:
-            List of tuples (demand_idx, assigned_amount) for tracking.
-        """
         assignments = []
 
-        # Sort demand points by distance to this facility (closer first)
+        # Ordena pontos de demanda por distância (mais próximos primeiro)
+        # Filtra apenas pontos com demanda restante > 0
         demand_distances = [
             (i, self.distance_matrix[i][facility_idx], remaining_demand[i])
             for i in remaining_demand.keys()
             if remaining_demand[i] > 1e-6
         ]
-        demand_distances.sort(key=lambda x: x[1])  # Sort by distance
+        demand_distances.sort(key=lambda x: x[1])  # Ordena por distância
 
-        # Assign demand greedily
+        # Atribui demanda de forma gulosa (mais próximo primeiro)
         for i, distance, demand in demand_distances:
             if available_capacity <= 1e-6:
-                break
+                break  # Sem capacidade disponível
 
+            # Atribui o máximo possível (demanda restante ou capacidade disponível)
             assign_amount = min(demand, available_capacity)
             remaining_demand[i] -= assign_amount
             assignments.append((i, assign_amount))
@@ -224,20 +204,13 @@ class HeuristicSolver:
         solution: Dict[str, Any],
         facility_assignments: Dict[int, List[Tuple[int, float]]],
     ) -> None:
-        """Ensure all demand is satisfied by opening additional facilities if needed.
 
-        Args:
-            opened_facilities: Dictionary of opened facilities.
-            remaining_demand: Dictionary of remaining demand.
-            facility_options: List of facility options.
-            solution: Solution dictionary to update.
-        """
         total_remaining = sum(remaining_demand.values())
 
         if total_remaining <= 1e-6:
-            return  # All demand satisfied
+            return  # Toda demanda já foi atendida
 
-        # Sort options by cost-benefit
+        # Reordena opções por score (pode ter mudado após primeira passada)
         facility_options.sort(key=lambda x: x["cost_benefit"])
 
         for option in facility_options:
@@ -246,13 +219,13 @@ class HeuristicSolver:
             capacity = option["capacity"]
             fixed_cost = option["fixed_cost"]
 
-            # Check if we can use this facility
+            # Verifica se pode usar esta cantina
             if facility_idx in opened_facilities:
-                # Use remaining capacity
+                # Usa capacidade restante da cantina já aberta
                 used = opened_facilities[facility_idx]["used_capacity"]
                 available = capacity - used
             else:
-                # Open new facility
+                # Abre nova cantina
                 available = capacity
                 opened_facilities[facility_idx] = {
                     "type": facility_type,
@@ -262,6 +235,7 @@ class HeuristicSolver:
                 }
                 solution["total_fixed_cost"] += fixed_cost
 
+            # Tenta atribuir demanda se houver capacidade
             if available > 1e-6:
                 assignments = self._assign_demand_to_facility_with_tracking(
                     facility_idx,
@@ -276,9 +250,10 @@ class HeuristicSolver:
                         opened_facilities[facility_idx]["used_capacity"] += assigned_amount
                         facility_assignments[facility_idx].append((demand_idx, assigned_amount))
 
+            # Verifica se ainda sobra demanda
             total_remaining = sum(remaining_demand.values())
             if total_remaining <= 1e-6:
-                break
+                break  # Toda demanda atendida, pode parar
 
     def _build_solution_structure(
         self,
@@ -286,22 +261,16 @@ class HeuristicSolver:
         facility_assignments: Dict[int, List[Tuple[int, float]]],
         solution: Dict[str, Any],
     ) -> None:
-        """Build the final solution structure from opened facilities.
 
-        Args:
-            opened_facilities: Dictionary of opened facilities.
-            facility_assignments: Dictionary tracking assignments per facility.
-            solution: Solution dictionary to update.
-        """
         solution["facilities_opened"] = []
         solution["assignments"] = {}
         solution["total_variable_cost"] = 0.0
 
-        # Initialize assignments
+        # Inicializa estrutura de atribuições
         for i in range(len(self.demand_points)):
             solution["assignments"][self.demand_points[i]["id"]] = []
 
-        # Build facility list
+        # Constrói lista de cantinas abertas
         for j, facility_info in opened_facilities.items():
             facility = self.facility_points[j]
             solution["facilities_opened"].append({
@@ -311,7 +280,7 @@ class HeuristicSolver:
                 "fixed_cost": facility_info["fixed_cost"],
             })
 
-        # Build assignments from tracking
+        # Constrói atribuições a partir do rastreamento interno
         for facility_idx, assignments in facility_assignments.items():
             facility = self.facility_points[facility_idx]
             facility_id = facility["id"]
@@ -320,6 +289,7 @@ class HeuristicSolver:
                 demand_point = self.demand_points[demand_idx]
                 demand_id = demand_point["id"]
                 distance = self.distance_matrix[demand_idx][facility_idx]
+                # Custo variável = distância × fator × demanda atribuída
                 variable_cost = distance * DISTANCE_COST_FACTOR * assigned_amount
 
                 solution["assignments"][demand_id].append({
@@ -336,27 +306,22 @@ class HeuristicSolver:
         remaining_demand: Dict[int, float],
         solution: Dict[str, Any],
     ) -> None:
-        """Try to improve solution with local search.
 
-        Args:
-            opened_facilities: Dictionary of opened facilities.
-            remaining_demand: Dictionary of remaining demand.
-            solution: Solution dictionary to update.
-        """
-        # Try to close facilities with low utilization
+        # Identifica cantinas com baixa utilização (< 30%)
         facilities_to_remove = []
         for j, facility_info in opened_facilities.items():
             utilization = facility_info["used_capacity"] / facility_info["capacity"]
-            if utilization < 0.3:  # Less than 30% utilization
+            if utilization < 0.3:  # Menos de 30% de utilização
                 facilities_to_remove.append(j)
 
-        # Try to remove low-utilization facilities and reassign
+        # Tenta remover cantinas pouco utilizadas
         for j in facilities_to_remove:
             if j in opened_facilities:
-                # Check if demand can be reassigned
+                # Verifica se a demanda pode ser realocada
                 capacity_to_reassign = opened_facilities[j]["used_capacity"]
                 can_reassign = False
 
+                # Procura outras cantinas com capacidade suficiente
                 for k, other_facility in opened_facilities.items():
                     if k != j:
                         available = other_facility["capacity"] - other_facility["used_capacity"]
@@ -364,8 +329,8 @@ class HeuristicSolver:
                             can_reassign = True
                             break
 
+                # Se conseguiu realocar, remove a cantina (economiza custo fixo)
                 if can_reassign:
-                    # Remove facility
                     solution["total_fixed_cost"] -= opened_facilities[j]["fixed_cost"]
                     del opened_facilities[j]
                     logger.debug(f"Removed low-utilization facility at index {j}")
