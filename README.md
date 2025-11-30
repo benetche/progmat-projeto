@@ -24,39 +24,49 @@ projeto-progmat/
 ├── map_point_marker.py               # Interface gráfica para marcar pontos
 ├── map_points.json                   # Dados dos pontos (demanda e instalação)
 ├── requirements.txt                  # Dependências do projeto
-└── RELATORIO_CFLP.md                 # Relatório completo da implementação
 ```
 
 ## Módulos
 
 ### `src/cflp/config.py`
+
 Contém todas as configurações e constantes:
+
 - Tipos de cantinas (pequena, média, grande) com capacidades e custos
 - Fator de custo por distância
 - Caminho do arquivo JSON
 
 ### `src/cflp/data_loader.py`
+
 Responsável por carregar dados do arquivo JSON:
+
 - `load_points()`: Carrega pontos de demanda e instalação
 
 ### `src/cflp/distance.py`
+
 Funções para cálculo de distâncias:
+
 - `calculate_euclidean_distance()`: Calcula distância euclidiana entre dois pontos
 - `calculate_distance_matrix()`: Cria matriz de distâncias entre todos os pares
 
 ### `src/cflp/solvers/`
+
 Implementações dos solvers de otimização:
 
 #### `gurobi_solver.py`
+
 - `GurobiSolver`: Classe para resolver o problema com Gurobi
 - `is_gurobi_available()`: Verifica disponibilidade do Gurobi
 
 #### `scip_solver.py`
+
 - `SCIPSolver`: Classe para resolver o problema com SCIP
 - `is_scip_available()`: Verifica disponibilidade do SCIP
 
 ### `src/cflp/utils/output.py`
+
 Utilitários para visualização:
+
 - `print_solution()`: Exibe resumo formatado da solução
 
 ## Uso
@@ -84,26 +94,13 @@ pip install -r requirements.txt
 ### Solvers (pelo menos um é necessário)
 
 **Gurobi:**
+
 ```bash
 pip install gurobipy
 ```
 
 **SCIP:**
+
 ```bash
 pip install pyscipopt
 ```
-
-## Características
-
-- ✅ Código modular e bem organizado
-- ✅ Type hints em todas as funções
-- ✅ Docstrings seguindo PEP 257
-- ✅ Suporte a múltiplos solvers (Gurobi e SCIP)
-- ✅ Tratamento robusto de erros
-- ✅ Logging para rastreamento
-- ✅ Fácil extensão e manutenção
-
-## Documentação
-
-Para mais detalhes sobre a implementação, consulte o arquivo `RELATORIO_CFLP.md`.
-
