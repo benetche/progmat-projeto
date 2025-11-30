@@ -1,0 +1,16 @@
+# Requirements for CFLP Cantinas Project
+# 
+# Core dependencies (required)
+# None - uses only standard library
+#
+# Optional dependencies for optimization solvers:
+# 
+# For Gurobi solver:
+gurobipy>=11.0.0
+#
+# For SCIP solver:
+pyscipopt>=5.0.0
+#
+# For image processing (map_point_marker.py):
+Pillow>=10.0.0
+

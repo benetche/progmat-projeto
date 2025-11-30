@@ -1,0 +1,502 @@
+{
+  "numeric_points": [
+    {
+      "id": "1",
+      "type": "numeric",
+      "x": 725,
+      "y": 539,
+      "demand": 50.0
+    },
+    {
+      "id": "2",
+      "type": "numeric",
+      "x": 758,
+      "y": 550,
+      "demand": 52.0
+    },
+    {
+      "id": "3",
+      "type": "numeric",
+      "x": 1055,
+      "y": 699,
+      "demand": 30.0
+    },
+    {
+      "id": "4",
+      "type": "numeric",
+      "x": 725,
+      "y": 449,
+      "demand": 49.0
+    },
+    {
+      "id": "5",
+      "type": "numeric",
+      "x": 903,
+      "y": 684,
+      "demand": 100.0
+    },
+    {
+      "id": "6",
+      "type": "numeric",
+      "x": 870,
+      "y": 1944,
+      "demand": 95.0
+    },
+    {
+      "id": "7",
+      "type": "numeric",
+      "x": 1011,
+      "y": 1952,
+      "demand": 100.0
+    },
+    {
+      "id": "8",
+      "type": "numeric",
+      "x": 1026,
+      "y": 2126,
+      "demand": 100.0
+    },
+    {
+      "id": "9",
+      "type": "numeric",
+      "x": 1219,
+      "y": 2316,
+      "demand": 23.0
+    },
+    {
+      "id": "10",
+      "type": "numeric",
+      "x": 1104,
+      "y": 2294,
+      "demand": 100.0
+    },
+    {
+      "id": "11",
+      "type": "numeric",
+      "x": 1624,
+      "y": 1680,
+      "demand": 240.0
+    },
+    {
+      "id": "12",
+      "type": "numeric",
+      "x": 1606,
+      "y": 1807,
+      "demand": 130.0
+    },
+    {
+      "id": "13",
+      "type": "numeric",
+      "x": 1728,
+      "y": 1814,
+      "demand": 140.0
+    },
+    {
+      "id": "14",
+      "type": "numeric",
+      "x": 1728,
+      "y": 1695,
+      "demand": 100.0
+    },
+    {
+      "id": "15",
+      "type": "numeric",
+      "x": 1888,
+      "y": 1714,
+      "demand": 230.0
+    },
+    {
+      "id": "16",
+      "type": "numeric",
+      "x": 1888,
+      "y": 1840,
+      "demand": 278.0
+    },
+    {
+      "id": "17",
+      "type": "numeric",
+      "x": 814,
+      "y": 1070,
+      "demand": 70.0
+    },
+    {
+      "id": "18",
+      "type": "numeric",
+      "x": 936,
+      "y": 985,
+      "demand": 100.0
+    },
+    {
+      "id": "19",
+      "type": "numeric",
+      "x": 922,
+      "y": 1055,
+      "demand": 30.0
+    },
+    {
+      "id": "20",
+      "type": "numeric",
+      "x": 795,
+      "y": 1148,
+      "demand": 48.0
+    },
+    {
+      "id": "21",
+      "type": "numeric",
+      "x": 940,
+      "y": 873,
+      "demand": 25.0
+    },
+    {
+      "id": "22",
+      "type": "numeric",
+      "x": 858,
+      "y": 866,
+      "demand": 25.0
+    },
+    {
+      "id": "23",
+      "type": "numeric",
+      "x": 382,
+      "y": 1022,
+      "demand": 30.0
+    },
+    {
+      "id": "24",
+      "type": "numeric",
+      "x": 468,
+      "y": 1189,
+      "demand": 20.0
+    },
+    {
+      "id": "25",
+      "type": "numeric",
+      "x": 650,
+      "y": 1015,
+      "demand": 40.0
+    },
+    {
+      "id": "26",
+      "type": "numeric",
+      "x": 617,
+      "y": 791,
+      "demand": 100.0
+    },
+    {
+      "id": "27",
+      "type": "numeric",
+      "x": 635,
+      "y": 617,
+      "demand": 30.0
+    },
+    {
+      "id": "28",
+      "type": "numeric",
+      "x": 554,
+      "y": 1189,
+      "demand": 15.0
+    },
+    {
+      "id": "29",
+      "type": "numeric",
+      "x": 1479,
+      "y": 1747,
+      "demand": 300.0
+    },
+    {
+      "id": "30",
+      "type": "numeric",
+      "x": 989,
+      "y": 1412,
+      "demand": 300.0
+    },
+    {
+      "id": "31",
+      "type": "numeric",
+      "x": 1078,
+      "y": 1398,
+      "demand": 80.0
+    },
+    {
+      "id": "32",
+      "type": "numeric",
+      "x": 1446,
+      "y": 1539,
+      "demand": 400.0
+    },
+    {
+      "id": "33",
+      "type": "numeric",
+      "x": 866,
+      "y": 1758,
+      "demand": 60.0
+    },
+    {
+      "id": "34",
+      "type": "numeric",
+      "x": 721,
+      "y": 1747,
+      "demand": 70.0
+    },
+    {
+      "id": "35",
+      "type": "numeric",
+      "x": 1026,
+      "y": 1777,
+      "demand": 50.0
+    },
+    {
+      "id": "36",
+      "type": "numeric",
+      "x": 1230,
+      "y": 2401,
+      "demand": 200.0
+    },
+    {
+      "id": "37",
+      "type": "numeric",
+      "x": 1364,
+      "y": 2123,
+      "demand": 120.0
+    },
+    {
+      "id": "38",
+      "type": "numeric",
+      "x": 1386,
+      "y": 2349,
+      "demand": 40.0
+    },
+    {
+      "id": "39",
+      "type": "numeric",
+      "x": 1401,
+      "y": 2416,
+      "demand": 50.0
+    },
+    {
+      "id": "40",
+      "type": "numeric",
+      "x": 1282,
+      "y": 2509,
+      "demand": 35.0
+    },
+    {
+      "id": "41",
+      "type": "numeric",
+      "x": 1197,
+      "y": 751,
+      "demand": 50.0
+    },
+    {
+      "id": "42",
+      "type": "numeric",
+      "x": 672,
+      "y": 1665,
+      "demand": 21.0
+    },
+    {
+      "id": "43",
+      "type": "numeric",
+      "x": 1093,
+      "y": 1925,
+      "demand": 60.0
+    },
+    {
+      "id": "44",
+      "type": "numeric",
+      "x": 1156,
+      "y": 1929,
+      "demand": 40.0
+    },
+    {
+      "id": "45",
+      "type": "numeric",
+      "x": 1290,
+      "y": 2022,
+      "demand": 10.0
+    },
+    {
+      "id": "46",
+      "type": "numeric",
+      "x": 996,
+      "y": 1665,
+      "demand": 70.0
+    },
+    {
+      "id": "47",
+      "type": "numeric",
+      "x": 1089,
+      "y": 1710,
+      "demand": 40.0
+    },
+    {
+      "id": "48",
+      "type": "numeric",
+      "x": 989,
+      "y": 1725,
+      "demand": 40.0
+    },
+    {
+      "id": "49",
+      "type": "numeric",
+      "x": 1345,
+      "y": 765,
+      "demand": 40.0
+    },
+    {
+      "id": "50",
+      "type": "numeric",
+      "x": 1264,
+      "y": 2799,
+      "demand": 10.0
+    },
+    {
+      "id": "51",
+      "type": "numeric",
+      "x": 948,
+      "y": 1152,
+      "demand": 150.0
+    },
+    {
+      "id": "52",
+      "type": "numeric",
+      "x": 1461,
+      "y": 1840,
+      "demand": 50.0
+    },
+    {
+      "id": "53",
+      "type": "numeric",
+      "x": 628,
+      "y": 1431,
+      "demand": 40.0
+    },
+    {
+      "id": "54",
+      "type": "numeric",
+      "x": 594,
+      "y": 1305,
+      "demand": 35.0
+    },
+    {
+      "id": "55",
+      "type": "numeric",
+      "x": 646,
+      "y": 1223,
+      "demand": 20.0
+    },
+    {
+      "id": "56",
+      "type": "numeric",
+      "x": 554,
+      "y": 1267,
+      "demand": 20.0
+    },
+    {
+      "id": "57",
+      "type": "numeric",
+      "x": 1015,
+      "y": 899,
+      "demand": 11.0
+    },
+    {
+      "id": "58",
+      "type": "numeric",
+      "x": 472,
+      "y": 951,
+      "demand": 60.0
+    }
+  ],
+  "alpha_points": [
+    {
+      "id": "C1",
+      "type": "alphanumeric",
+      "x": 1316,
+      "y": 2677
+    },
+    {
+      "id": "C2",
+      "type": "alphanumeric",
+      "x": 1386,
+      "y": 2487
+    },
+    {
+      "id": "C3",
+      "type": "alphanumeric",
+      "x": 1319,
+      "y": 2308
+    },
+    {
+      "id": "C4",
+      "type": "alphanumeric",
+      "x": 1364,
+      "y": 2197
+    },
+    {
+      "id": "C5",
+      "type": "alphanumeric",
+      "x": 1078,
+      "y": 2052
+    },
+    {
+      "id": "C6",
+      "type": "alphanumeric",
+      "x": 1360,
+      "y": 1911
+    },
+    {
+      "id": "C7",
+      "type": "alphanumeric",
+      "x": 687,
+      "y": 1557
+    },
+    {
+      "id": "C8",
+      "type": "alphanumeric",
+      "x": 687,
+      "y": 1193
+    },
+    {
+      "id": "C9",
+      "type": "alphanumeric",
+      "x": 1803,
+      "y": 1725
+    },
+    {
+      "id": "C10",
+      "type": "alphanumeric",
+      "x": 1067,
+      "y": 1238
+    },
+    {
+      "id": "C11",
+      "type": "alphanumeric",
+      "x": 806,
+      "y": 583
+    },
+    {
+      "id": "C12",
+      "type": "alphanumeric",
+      "x": 1085,
+      "y": 858
+    },
+    {
+      "id": "C13",
+      "type": "alphanumeric",
+      "x": 1435,
+      "y": 1174
+    },
+    {
+      "id": "C14",
+      "type": "alphanumeric",
+      "x": 472,
+      "y": 799
+    },
+    {
+      "id": "C15",
+      "type": "alphanumeric",
+      "x": 501,
+      "y": 1029
+    }
+  ]
+}
