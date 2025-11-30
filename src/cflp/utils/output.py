@@ -58,21 +58,23 @@ def print_solution(solution: Dict[str, Any], solver_name: str) -> None:
         print(f"\nCantinas abertas: {len(solution['facilities_opened'])}")
         print("-" * 80)
 
-        # Calculate demand coverage for each facility
+        # Calculate demand coverage and variable cost for each facility
         facility_demand: Dict[str, Dict[str, Any]] = {}
         for facility in solution["facilities_opened"]:
             facility_id = facility["location"]
             facility_demand[facility_id] = {
                 "total_demand": 0.0,
+                "total_variable_cost": 0.0,
                 "demand_points": [],
             }
 
-        # Process assignments to calculate demand per facility
+        # Process assignments to calculate demand and variable cost per facility
         for demand_id, assignments in solution.get("assignments", {}).items():
             for assignment in assignments:
                 facility_id = assignment["facility"]
                 if facility_id in facility_demand:
                     facility_demand[facility_id]["total_demand"] += assignment["assigned_demand"]
+                    facility_demand[facility_id]["total_variable_cost"] += assignment.get("variable_cost", 0.0)
                     facility_demand[facility_id]["demand_points"].append({
                         "id": demand_id,
                         "demand": assignment["assigned_demand"],
@@ -91,6 +93,7 @@ def print_solution(solution: Dict[str, Any], solver_name: str) -> None:
                 f"Custo fixo: {facility['fixed_cost']:.2f}",
             )
             print(f"    Demanda coberta: {demand_info['total_demand']:.2f}")
+            print(f"    Custo variavel: {demand_info['total_variable_cost']:.2f}")
             print(f"    Pontos de demanda atendidos: {len(demand_info['demand_points'])}")
             
             # List demand points (limit to first 15 for readability)

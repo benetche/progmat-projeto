@@ -54,6 +54,8 @@ class MapPointMarker:
         self.numeric_counter = 0
         self.alphanumeric_counter = 0
         self.delete_mode = False
+        # Display mode: "both", "numeric", "alpha"
+        self.display_mode = "both"
 
         # Initialize GUI
         self.root = Tk()
@@ -65,9 +67,12 @@ class MapPointMarker:
         self.scale_factor = 1.0
         self.original_width = 0
         self.original_height = 0
+        self.display_width = 0
+        self.display_height = 0
 
         self._setup_gui()
         self._load_points()
+        self._update_title()
         self._display_points()
 
     def _setup_gui(self) -> None:
@@ -99,10 +104,10 @@ class MapPointMarker:
             self.scale_factor = min(scale_x, scale_y)
 
             # Resize image for display
-            display_width = int(self.original_width * self.scale_factor)
-            display_height = int(self.original_height * self.scale_factor)
+            self.display_width = int(self.original_width * self.scale_factor)
+            self.display_height = int(self.original_height * self.scale_factor)
             self.image = self.original_image.resize(
-                (display_width, display_height),
+                (self.display_width, self.display_height),
                 Image.Resampling.LANCZOS,
             )
             self.photo = ImageTk.PhotoImage(self.image)
@@ -110,13 +115,16 @@ class MapPointMarker:
             # Create canvas with scaled dimensions
             self.canvas = Canvas(
                 self.root,
-                width=display_width,
-                height=display_height,
+                width=self.display_width,
+                height=self.display_height,
             )
             self.canvas.pack()
 
             # Display image
             self.canvas.create_image(0, 0, anchor="nw", image=self.photo)
+
+            # Draw legend
+            self._draw_legend()
 
             # Bind mouse events
             self.canvas.bind("<Button-1>", self._on_left_click)
@@ -125,11 +133,13 @@ class MapPointMarker:
             # Bind keyboard events
             self.root.bind("<KeyPress-x>", self._toggle_delete_mode)
             self.root.bind("<KeyPress-X>", self._toggle_delete_mode)
+            self.root.bind("<KeyPress-z>", self._toggle_display_mode)
+            self.root.bind("<KeyPress-Z>", self._toggle_display_mode)
             self.root.focus_set()  # Allow keyboard focus
 
             logger.info(
                 f"GUI setup completed. Original size: {self.original_width}x{self.original_height}, "
-                f"Display size: {display_width}x{display_height}, Scale: {self.scale_factor:.3f}",
+                f"Display size: {self.display_width}x{self.display_height}, Scale: {self.scale_factor:.3f}",
             )
         except Exception as e:
             logger.error(f"Error setting up GUI: {e}")
@@ -269,12 +279,32 @@ class MapPointMarker:
         # Draw demand label for numeric points (below the point)
         if point_type == "numeric" and "demand" in point:
             demand_text = f"D: {point['demand']}"
+            text_y = y + TEXT_OFFSET + POINT_RADIUS
+            
+            # Estimate text width and height for background rectangle
+            # Approximate: each character ~6 pixels wide, height ~12 pixels for font size 9
+            text_width = len(demand_text) * 6
+            text_height = 12
+            padding = 3
+            
+            # Draw white background rectangle with black border for better readability
+            self.canvas.create_rectangle(
+                x - text_width // 2 - padding,
+                text_y - text_height // 2 - padding,
+                x + text_width // 2 + padding,
+                text_y + text_height // 2 + padding,
+                fill="white",
+                outline="black",
+                width=1,
+            )
+            
+            # Draw text on top with bold font and dark color
             self.canvas.create_text(
                 x,
-                y + TEXT_OFFSET + POINT_RADIUS,
+                text_y,
                 text=demand_text,
                 fill="darkred",
-                font=("Arial", 9),
+                font=("Arial", 9, "bold"),
             )
 
     def _load_points(self) -> None:
@@ -350,12 +380,51 @@ class MapPointMarker:
             event: Keyboard event (not used, but required by tkinter).
         """
         self.delete_mode = not self.delete_mode
-        if self.delete_mode:
-            self.root.title("Map Point Marker - DELETE MODE (Press X to toggle)")
-            logger.info("Delete mode enabled")
+        self._update_title()
+        logger.info(f"Delete mode {'enabled' if self.delete_mode else 'disabled'}")
+
+    def _toggle_display_mode(self, event: Any) -> None:
+        """Toggle display mode between both, numeric only, and alpha only.
+
+        Args:
+            event: Keyboard event (not used, but required by tkinter).
+        """
+        if self.display_mode == "both":
+            self.display_mode = "numeric"
+        elif self.display_mode == "numeric":
+            self.display_mode = "alpha"
         else:
-            self.root.title("Map Point Marker")
-            logger.info("Delete mode disabled")
+            self.display_mode = "both"
+        
+        self._update_title()
+        self._redraw_all_points()
+        
+        mode_names = {
+            "both": "Ambos",
+            "numeric": "Apenas Numericos",
+            "alpha": "Apenas Alfanumericos",
+        }
+        logger.info(f"Display mode changed to: {mode_names[self.display_mode]}")
+
+    def _update_title(self) -> None:
+        """Update window title based on current modes."""
+        title = "Map Point Marker"
+        mode_parts = []
+        
+        if self.delete_mode:
+            mode_parts.append("DELETE MODE (X para alternar)")
+        
+        mode_names = {
+            "both": "Ambos",
+            "numeric": "Apenas Numericos",
+            "alpha": "Apenas Alfanumericos",
+        }
+        mode_parts.append(f"Exibindo: {mode_names[self.display_mode]} (Z para alternar)")
+        
+        if mode_parts:
+            title += " - " + " | ".join(mode_parts)
+        
+        self.root.title(title)
 
     def _find_nearest_point(
         self,
@@ -468,7 +537,7 @@ class MapPointMarker:
         logger.info(f"Reindexed {new_counter} {point_type} points")
 
     def _redraw_all_points(self) -> None:
-        """Clear canvas and redraw all points."""
+        """Clear canvas and redraw all points based on display mode."""
         if self.canvas is None:
             return
 
@@ -479,15 +548,111 @@ class MapPointMarker:
         if self.photo is not None:
             self.canvas.create_image(0, 0, anchor="nw", image=self.photo)
 
-        # Redraw all points
-        for point in self.points:
+        # Redraw legend
+        self._draw_legend()
+
+        # Filter points based on display mode
+        points_to_draw = self._get_filtered_points()
+        
+        # Redraw filtered points
+        for point in points_to_draw:
             self._draw_point(point)
 
+    def _get_filtered_points(self) -> List[Dict[str, Any]]:
+        """Get points filtered by current display mode.
+
+        Returns:
+            List of points to display based on current display mode.
+        """
+        if self.display_mode == "both":
+            return self.points
+        elif self.display_mode == "numeric":
+            return [p for p in self.points if p.get("type") == "numeric"]
+        else:  # alpha
+            return [p for p in self.points if p.get("type") == "alphanumeric"]
+
+    def _draw_legend(self) -> None:
+        """Draw color legend on the canvas."""
+        if self.canvas is None:
+            return
+
+        # Use display width for legend positioning
+        canvas_width = self.display_width if self.display_width > 0 else self.canvas.winfo_width()
+        
+        # Legend position (top-right corner with margin)
+        margin = 10
+        legend_width = 190
+        legend_x = canvas_width - legend_width - margin
+        legend_y = margin
+        legend_spacing = 25
+
+        # Background rectangle for legend
+        legend_height = 70
+        self.canvas.create_rectangle(
+            legend_x - 5,
+            legend_y - 5,
+            legend_x + legend_width,
+            legend_y + legend_height,
+            fill="white",
+            outline="black",
+            width=2,
+        )
+
+        # Title
+        self.canvas.create_text(
+            legend_x + legend_width // 2,
+            legend_y + 10,
+            text="Legenda",
+            fill="black",
+            font=("Arial", 10, "bold"),
+        )
+
+        # Red point (demand points)
+        legend_point_y = legend_y + 30
+        self.canvas.create_oval(
+            legend_x + 10 - POINT_RADIUS,
+            legend_point_y - POINT_RADIUS,
+            legend_x + 10 + POINT_RADIUS,
+            legend_point_y + POINT_RADIUS,
+            fill=POINT_COLOR_NUMERIC,
+            outline="black",
+            width=2,
+        )
+        self.canvas.create_text(
+            legend_x + 30,
+            legend_point_y,
+            text="Pontos de demanda",
+            fill="black",
+            font=("Arial", 9),
+            anchor="w",
+        )
+
+        # Blue point (facility points)
+        legend_point_y += legend_spacing
+        self.canvas.create_oval(
+            legend_x + 10 - POINT_RADIUS,
+            legend_point_y - POINT_RADIUS,
+            legend_x + 10 + POINT_RADIUS,
+            legend_point_y + POINT_RADIUS,
+            fill=POINT_COLOR_ALPHANUMERIC,
+            outline="black",
+            width=2,
+        )
+        self.canvas.create_text(
+            legend_x + 30,
+            legend_point_y,
+            text="Pontos de instalacao",
+            fill="black",
+            font=("Arial", 9),
+            anchor="w",
+        )
+
     def _display_points(self) -> None:
-        """Display all loaded points on the canvas."""
-        for point in self.points:
+        """Display all loaded points on the canvas based on display mode."""
+        points_to_draw = self._get_filtered_points()
+        for point in points_to_draw:
             self._draw_point(point)
-        logger.info(f"Displayed {len(self.points)} points on the map")
+        logger.info(f"Displayed {len(points_to_draw)} points on the map (mode: {self.display_mode})")
 
     def _save_points(self) -> None:
         """Save all points to JSON file, separated into numeric and alpha arrays."""

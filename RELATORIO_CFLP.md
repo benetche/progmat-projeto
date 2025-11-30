@@ -11,7 +11,7 @@ Este documento apresenta a implementação completa de um problema de **Capacita
 O problema consiste em:
 
 - **Pontos de demanda**: 58 pontos numéricos no mapa, cada um com uma demanda específica (total: 4.822 unidades)
-- **Pontos de instalação**: 15 pontos alfanuméricos (C1 a C15) onde cantinas podem ser construídas
+- **Pontos de instalação**: 21 pontos alfanuméricos (C1 a C21) onde cantinas podem ser construídas
 - **Tipos de cantinas**: 3 tipos disponíveis (pequena, média, grande) com capacidades e custos diferentes
 
 ### 2.2 Objetivos
@@ -31,8 +31,8 @@ O problema consiste em:
 
 #### Pontos de Instalação
 
-- **Quantidade**: 15 pontos
-- **Identificadores**: C1, C2, ..., C15
+- **Quantidade**: 21 pontos
+- **Identificadores**: C1, C2, ..., C21
 - **Localização**: Coordenadas (x, y) no mapa
 - **Formato**: Armazenados em `alpha_points` no arquivo JSON
 
@@ -54,7 +54,7 @@ O problema consiste em:
 ### 3.1 Conjuntos e Índices
 
 - **I**: Conjunto de pontos de demanda (i = 1, 2, ..., 58)
-- **J**: Conjunto de pontos de instalação (j = 1, 2, ..., 15)
+- **J**: Conjunto de pontos de instalação (j = 1, 2, ..., 21)
 - **K**: Conjunto de tipos de cantinas (k ∈ {pequena, média, grande})
 
 ### 3.2 Parâmetros
@@ -206,7 +206,7 @@ O código está organizado no arquivo `cflp_cantinas.py` com as seguintes funç�
 **Função**: `calculate_distance_matrix(demand_points, facility_points)`
 
 - **Responsabilidade**: Cria matriz de distâncias entre todos os pares (demanda, instalação)
-- **Dimensão**: 58 × 15 = 870 distâncias calculadas
+- **Dimensão**: 58 × 21 = 1.218 distâncias calculadas
 
 ### 5.2 Modelagem com Gurobi
 
@@ -374,39 +374,78 @@ O programa:
 3. Resolve o problema com cada solver disponível
 4. Exibe os resultados formatados
 
-### 8.4 Exemplo de Saída
+### 8.4 Resultados da Execução
 
-```
-================================================================================
-RESOLVENDO COM GUROBI...
-================================================================================
-SOLUÇÃO CFLP - GUROBI
-================================================================================
-Status: optimal
-Valor da função objetivo: XXXXX.XX
-Custo fixo total: XXXXX.XX
-Custo variável total: XXXXX.XX
+#### 8.4.1 Métricas dos Solvers
 
-Cantinas abertas: X
---------------------------------------------------------------------------------
-  • Localização: C1 | Tipo: media | Coordenadas: (1316, 2677) | Custo fixo: 20000.00
-  ...
-================================================================================
-```
+| Solver     | Status     | Objetivo     | Tempo (s) | Gap (%) | Cantinas |
+| ---------- | ---------- | ------------ | --------- | ------- | -------- |
+| Gurobi     | Ótima      | 1.797.081,09 | 0,114     | 0,0000  | 8        |
+| SCIP       | Ótima      | 1.797.081,09 | 1,607     | 0,0000  | 8        |
+| Heurística | Heurística | 2.650.263,61 | 0,001     | N/A     | 9        |
+
+#### 8.4.2 Análise Comparativa
+
+**Desempenho:**
+
+- **Mais rápido**: Heurística (0,001s)
+- **Mais lento**: SCIP (1,607s)
+- **Speedup**: 1.605,29x (heurística vs SCIP)
+
+**Qualidade da Solução:**
+
+- **Melhor solução**: Gurobi e SCIP (objetivo = 1.797.081,09)
+- **Heurística**: 47,48% pior que a solução ótima (diferença de 853.182,52)
+
+**Gap de Optimalidade:**
+
+- **Gurobi**: 0% (solução ótima garantida)
+- **SCIP**: 0% (solução ótima garantida)
+- **Heurística**: N/A (não possui bound)
+
+**Instalações:**
+
+- **Solvers exatos**: 8 cantinas abertas
+- **Heurística**: 9 cantinas abertas
+
+#### 8.4.3 Solução Ótima Encontrada
+
+A solução ótima encontrada por Gurobi e SCIP consiste em **8 cantinas**:
+
+1. **C3** (média) - Coordenadas: (1319, 2308) - Demanda: 550,00
+2. **C5** (grande) - Coordenadas: (1078, 2052) - Demanda: 681,00
+3. **C8** (média) - Coordenadas: (687, 1193) - Demanda: 549,00
+4. **C9** (grande) - Coordenadas: (1803, 1725) - Demanda: 700,00
+5. **C10** (média) - Coordenadas: (1067, 1238) - Demanda: 550,00
+6. **C16** (média) - Coordenadas: (747, 661) - Demanda: 542,00
+7. **C20** (grande) - Coordenadas: (1561, 1702) - Demanda: 700,00
+8. **C21** (média) - Coordenadas: (1371, 1561) - Demanda: 550,00
+
+**Distribuição de tipos:**
+
+- 5 cantinas médias (capacidade 550 cada)
+- 3 cantinas grandes (capacidade 700 cada)
+- Total de capacidade: 5.450 unidades (suficiente para 4.822 de demanda)
+
+**Custos:**
+
+- Custo fixo total: R$ 970.000,00
+- Custo variável total: R$ 827.081,09
+- **Custo total**: R$ 1.797.081,09
 
 ## 9. Análise do Problema
 
 ### 9.1 Complexidade
 
-- **Variáveis binárias**: 15 locais × 3 tipos = 45 variáveis
-- **Variáveis contínuas**: 58 demandas × 15 locais = 870 variáveis
-- **Total de variáveis**: 915
+- **Variáveis binárias**: 21 locais × 3 tipos = 63 variáveis
+- **Variáveis contínuas**: 58 demandas × 21 locais = 1.218 variáveis
+- **Total de variáveis**: 1.281
 - **Restrições**:
   - Satisfação de demanda: 58
-  - Capacidade: 15
-  - Um tipo por local: 15
-  - Atribuição: 58 × 15 = 870
-  - **Total de restrições**: 958
+  - Capacidade: 21
+  - Um tipo por local: 21
+  - Atribuição: 58 × 21 = 1.218
+  - **Total de restrições**: 1.318
 
 ### 9.2 Características do Problema
 
@@ -453,48 +492,105 @@ Cantinas abertas: X
 2. **`map_points.json`**: Dados dos pontos de demanda e instalação
 3. **`map_point_marker.py`**: Aplicação GUI para marcar pontos no mapa
 4. **`requirements.txt`**: Dependências do projeto
+5. **`HEURISTICA.md`**: Documentação da heurística implementada
 
 ### 11.2 Estrutura de Código
 
 ```
 projeto-progmat/
-├── cflp_cantinas.py          # Modelo CFLP principal
-├── map_point_marker.py       # Interface gráfica
-├── map_points.json           # Dados dos pontos
-├── requirements.txt          # Dependências
-└── RELATORIO_CFLP.md         # Este relatório
+├── src/
+│   └── cflp/
+│       ├── config.py              # Configurações
+│       ├── data_loader.py          # Carregamento de dados
+│       ├── distance.py             # Cálculo de distâncias
+│       ├── solvers/
+│       │   ├── gurobi_solver.py    # Solver Gurobi
+│       │   ├── scip_solver.py      # Solver SCIP
+│       │   └── heuristic_solver.py # Heurística gulosa
+│       └── utils/
+│           └── output.py           # Visualização e comparação
+├── cflp_cantinas.py                # Ponto de entrada principal
+├── map_point_marker.py             # Interface gráfica
+├── map_points.json                 # Dados dos pontos
+├── requirements.txt                 # Dependências
+├── HEURISTICA.md                   # Documentação da heurística
+└── RELATORIO_CFLP.md               # Este relatório
 ```
 
-## 12. Conclusões
+## 12. Resultados Obtidos
 
-### 12.1 Implementação Bem-Sucedida
+### 12.1 Solução Ótima
+
+Ambos os solvers exatos (Gurobi e SCIP) encontraram a **mesma solução ótima**:
+
+- **Valor objetivo**: R$ 1.797.081,09
+- **Cantinas abertas**: 8
+- **Distribuição**: 5 médias + 3 grandes
+- **Capacidade total**: 5.450 unidades
+- **Demanda atendida**: 4.822 unidades (100%)
+
+### 12.2 Comparação de Solvers
+
+#### Performance
+
+- **Gurobi**: 0,114 segundos (mais rápido entre os exatos)
+- **SCIP**: 1,607 segundos (14x mais lento que Gurobi)
+- **Heurística**: 0,001 segundos (extremamente rápida)
+
+#### Qualidade
+
+- **Gurobi e SCIP**: Solução ótima garantida (gap = 0%)
+- **Heurística**: Solução 47,48% pior que a ótima
+
+#### Observações
+
+1. **Gurobi e SCIP** encontraram a mesma solução ótima, validando a correção da implementação
+2. **Heurística** é muito rápida mas produz solução subótima significativa
+3. A heurística abriu **9 cantinas** vs **8 cantinas** da solução ótima, indicando subutilização
+
+### 12.3 Análise da Solução
+
+A solução ótima mostra uma estratégia eficiente:
+
+- Uso de **cantinas grandes** (700 unidades) para áreas de alta demanda concentrada
+- Uso de **cantinas médias** (550 unidades) para distribuição mais ampla
+- **Nenhuma cantina pequena** foi escolhida (não é economicamente viável)
+- **Capacidade total** (5.450) excede demanda (4.822) em apenas 13%, indicando eficiência
+
+## 13. Conclusões
+
+### 13.1 Implementação Bem-Sucedida
 
 A implementação do problema CFLP foi concluída com sucesso, incluindo:
 
 ✅ Modelagem matemática completa e correta  
-✅ Implementação com dois solvers (Gurobi e SCIP)  
-✅ Código bem estruturado e documentado  
+✅ Implementação com dois solvers exatos (Gurobi e SCIP)  
+✅ Implementação de heurística gulosa  
+✅ Código bem estruturado e modularizado  
 ✅ Tratamento robusto de erros  
-✅ Visualização clara dos resultados
+✅ Visualização clara dos resultados com métricas detalhadas  
+✅ Comparação automática entre solvers
 
-### 12.2 Características Técnicas
+### 13.2 Características Técnicas
 
 - **Type hints** em todas as funções
 - **Docstrings** seguindo PEP 257
 - **Logging** para rastreamento
 - **Modularidade** e reutilização de código
 - **Compatibilidade** com múltiplos solvers
+- **Métricas detalhadas**: status, tempo, gap de optimalidade
+- **Comparação automática** entre solvers
 
-### 12.3 Resultados Esperados
+### 13.3 Resultados Obtidos
 
-O modelo deve encontrar uma solução ótima que:
+O modelo encontrou uma solução ótima que:
 
-- Atenda toda a demanda (4.822 unidades)
-- Minimize custos totais
-- Respeite capacidades das cantinas
-- Determine localizações e tipos ideais
+✅ Atende toda a demanda (4.822 unidades)  
+✅ Minimiza custos totais (R$ 1.797.081,09)  
+✅ Respeita capacidades das cantinas  
+✅ Determina localizações e tipos ideais (8 cantinas: 5 médias + 3 grandes)
 
-### 12.4 Aplicabilidade
+### 13.4 Aplicabilidade
 
 A solução desenvolvida pode ser aplicada a:
 
@@ -514,5 +610,6 @@ A solução desenvolvida pode ser aplicada a:
 ---
 
 **Data de Criação**: 2025-11-30  
-**Versão**: 1.0  
+**Última Atualização**: 2025-11-30  
+**Versão**: 2.0  
 **Autor**: Implementação para projeto de programação matemática
